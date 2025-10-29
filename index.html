@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KPRIT | AI Timetable Generator</title>
+  <style>
+    body { font-family: "Poppins", sans-serif; background: #eef2f7; margin: 0; padding: 0; color: #222; }
+    header { background: #004aad; color: white; text-align: center; padding: 15px; font-size: 22px; font-weight: 600; }
+    main { max-width: 950px; background: #fff; margin: 30px auto; border-radius: 12px;
+           box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); padding: 25px; }
+    h2 { text-align: center; color: #004aad; margin-bottom: 10px; }
+    label { display: block; margin: 10px 0 5px; font-weight: 500; }
+    select, input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; }
+    button { background: #004aad; color: white; border: none; border-radius: 8px;
+             padding: 10px 20px; margin: 10px 5px; cursor: pointer; font-size: 15px; transition: 0.3s; }
+    button:hover { background: #0072ff; }
+    table { width: 100%; border-collapse: collapse; margin-top: 25px; text-align: center; font-size: 14px; }
+    th, td { border: 1px solid #ccc; padding: 8px; }
+    th { background: #004aad; color: white; }
+    #msg { text-align: center; margin-top: 10px; color: #28a745; font-weight: 500; }
+    #loginBox { text-align:center; margin-bottom:20px; background:#f8f9fc; padding:10px; border-radius:8px; }
+  </style>
+</head>
+<body>
+  <header>
+    KOMMURI PRATAP REDDY INSTITUTE OF TECHNOLOGY<br />
+    AI-Based Timetable Generator
+  </header>
+
+  <main>
+    <div id="loginBox">
+      <h3>🔐 Admin Login</h3>
+      <input type="text" id="username" placeholder="Username" /><br><br>
+      <input type="password" id="password" placeholder="Password" /><br><br>
+      <button onclick="login()">Login</button>
+      <p id="loginMsg" style="color:red;"></p>
+    </div>
+
+    <div id="app" style="display:none;">
+      <h2>Generate Class Timetable</h2>
+
+      <label>Branch:
+        <select id="branch">
+          <option value="CSE(AI&ML)">CSE(AI&ML)</option>
+          <option value="CSE">CSE</option>
+          <option value="IT">IT</option>
+          <option value="ECE">ECE</option>
+          <option value="EEE">EEE</option>
+        </select>
+      </label>
+
+      <label>Section:
+        <select id="section">
+          <option value="A">A</option>
+          <option value="B">B</option>
+          <option value="C">C</option>
+          <option value="D">D</option>
+        </select>
+      </label>
+
+      <div style="text-align:center;">
+        <button onclick="generateTimetable()">Generate Timetable</button>
+        <button onclick="downloadPDF()">Download PDF</button>
+      </div>
+
+      <div id="msg"></div>
+      <div id="timetableContainer"></div>
+    </div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script>
+    let isAdmin = false;
+
+    function login() {
+      const user = document.getElementById("username").value.trim();
+      const pass = document.getElementById("password").value.trim();
+      if (user === "admin" && pass === "kprit123") {
+        isAdmin = true;
+        document.getElementById("loginBox").style.display = "none";
+        document.getElementById("app").style.display = "block";
+      } else {
+        document.getElementById("loginMsg").textContent = "Invalid credentials!";
+      }
+    }
+
+    const timetableContainer = document.getElementById("timetableContainer");
+    const msg = document.getElementById("msg");
+
+    const subjectsByBranch = {
+      "CSE(AI&ML)": ["OS", "COA", "MSF", "SE", "DS", "COI"],
+      "CSE": ["DBMS", "COA", "DS", "OS", "MPMC"],
+      "IT": ["SE", "CN", "DBMS", "AI", "OS"],
+      "ECE": ["EDC", "LICA", "DC", "SS", "PDC"],
+      "EEE": ["EE", "PE", "EM", "PS", "MP"],
+    };
+
+    const labsByBranch = {
+      "CSE(AI&ML)": ["OS LAB", "DS LAB", "DJANGO LAB"],
+      "CSE": ["DBMS LAB", "OS LAB"],
+      "IT": ["CN LAB", "DBMS LAB"],
+      "ECE": ["LICA LAB", "DC LAB"],
+      "EEE": ["PE LAB", "MP LAB"],
+    };
+
+    function randomPick(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function generateTimetable() {
+      const branch = document.getElementById("branch").value;
+      const section = document.getElementById("section").value;
+      const subjects = subjectsByBranch[branch] || [];
+      const labs = labsByBranch[branch] || [];
+
+      let html = `
+        <h3 style="text-align:center;margin-top:20px;">
+          ${branch} - ${section} | Semester: I | A.Y: 2025-26
+        </h3>
+        <table id="ttTable">
+          <tr>
+            <th>Day/Hour</th>
+            <th>9:30-10:30</th>
+            <th>10:30-11:30</th>
+            <th>11:30-12:30</th>
+            <th>01:15-02:15</th>
+            <th>02:15-03:15</th>
+            <th>03:15-04:15</th>
+          </tr>
+      `;
+
+      const days = ["MON", "TUE", "WED", "THU", "FRI", "SAT"];
+      days.forEach(day => {
+        const row = [];
+        for (let i = 0; i < 6; i++) {
+          if (Math.random() < 0.2) row.push(randomPick(labs));
+          else row.push(randomPick(subjects));
+        }
+        html += `<tr><td><b>${day}</b></td>${row.map(x => `<td contenteditable="${isAdmin}">${x}</td>`).join("")}</tr>`;
+      });
+
+      html += "</table>";
+      timetableContainer.innerHTML = html;
+      msg.textContent = "✅ Timetable generated successfully!";
+    }
+
+    function downloadPDF() {
+      if (!timetableContainer.innerHTML.trim()) {
+        msg.textContent = "⚠️ Please generate timetable first!";
+        return;
+      }
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: "landscape" });
+      doc.html(timetableContainer, {
+        callback: function (doc) {
+          doc.save("KPRIT_Timetable.pdf");
+        },
+        x: 10,
+        y: 10
+      });
+      msg.textContent = "📄 PDF downloaded successfully!";
+    }
+  </script>
+</body>
+</html>
